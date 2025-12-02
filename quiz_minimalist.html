@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz Năng lực số - Minimalist</title>
+  <style>
+    :root{--bg:#ffffff;--card:#fbfbfb;--text:#0b1220;--muted:#6b7280;--accent:#0f766e;--accent-2:#0ea5a4}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); margin:0; padding:24px;}
+    .wrap{max-width:880px;margin:0 auto}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    header h1{font-size:20px;margin:0}
+    .meta{color:var(--muted);font-size:13px}
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(12,26,31,0.05);margin-bottom:18px}
+    .q{margin-bottom:14px}
+    .q h3{margin:0 0 8px 0;font-size:15px}
+    .opts{display:flex;flex-direction:column;gap:8px}
+    label.opt{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+    input[type=radio]{width:16px;height:16px}
+    label.opt:hover{background:#f6fbfa}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{background:var(--accent);color:white;padding:10px 14px;border:0;border-radius:8px;cursor:pointer;font-weight:600}
+    button.secondary{background:transparent;color:var(--accent);border:1px solid rgba(15,118,110,0.12)}
+    .progress{height:8px;background:#eef2f2;border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+    footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+    @media (max-width:600px){body{padding:16px}}
+    /* result */
+    .result{display:none;gap:12px;align-items:center}
+    .result.visible{display:flex}
+    .score{font-size:28px;font-weight:700;color:var(--accent)}
+    .small{font-size:13px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(180deg,#eefcfb,#e6fffc);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)">QS</div>
+      <div>
+        <h1>Quiz: Ôn tập Năng lực số (Minimalist)</h1>
+        <div class="meta">60 câu trắc nghiệm • Tự động chấm điểm • Offline</div>
+      </div>
+    </header>
+
+    <div class="card" id="quizCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="small">Câu <span id="currentIndex">1</span> / <span id="totalQ">60</span></div>
+        <div style="width:48%"><div class="progress"><i id="progBar"></i></div></div>
+      </div>
+
+      <div id="questionArea"></div>
+
+      <div class="controls" style="margin-top:12px">
+        <button id="prevBtn" class="secondary">Quay lại</button>
+        <button id="nextBtn">Câu tiếp</button>
+        <button id="submitBtn" style="margin-left:auto">Nộp bài</button>
+        <button id="resetBtn" class="secondary">Làm lại</button>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div class="small">Kết quả</div>
+          <div class="score" id="scoreText">0 / 60</div>
+          <div class="small">Độ chính xác: <span id="percentText">0%</span></div>
+        </div>
+        <div style="text-align:right">
+          <button id="reviewBtn" class="secondary">Xem đáp án</button>
+          <button id="downloadBtn" style="margin-left:8px">Tải kết quả</button>
+        </div>
+      </div>
+      <hr style="margin:12px 0">
+      <div id="feedbackArea" class="small"></div>
+    </div>
+
+    <footer>Phiên bản offline • Minimalist style • Mở file .html bằng trình duyệt để chạy</footer>
+  </div>
+
+  <script>
+    // Questions array (text, options, correct index)
+    const questions = [
+      {q: "Bước đầu tiên trong kỹ năng tìm kiếm Thông tin số là gì?", opts:["Sử dụng từ khóa thông minh","Xác định nhu cầu thông tin","Sàng lọc và đánh giá kết quả","Lưu trữ và trích dẫn thông tin"], a:1},
+      {q: "Một e-Portfolio bao gồm những gì?", opts:["Chỉ tên","Thông tin cá nhân, mục tiêu, thành tích, sản phẩm học tập","Chỉ mật khẩu","Chỉ email"], a:1},
+      {q: "Email phù hợp với nội dung nào?", opts:["Trao đổi nhanh thông tin ngắn gọn","Nội dung chính thức, cần lưu trữ","Bình luận trên mạng xã hội","Cuộc gọi video"], a:1},
+      {q: "Đặc điểm chính của AI yếu (Weak AI) là gì?", opts:["Có khả năng tư duy như con người.","Vượt xa trí tuệ con người.","Thực hiện tốt một nhiệm vụ cụ thể.","Có ý thức và cảm xúc."], a:2},
+      {q: "Năng lực số định nghĩa theo Thông tư 02/2025/TT-BGDĐT như thế nào?", opts:["Khả năng sử dụng phần mềm văn phòng và truy cập internet.","Khả năng sử dụng công nghệ số để hoàn thành nhiệm vụ cụ thể hoặc giải quyết vấn đề trong thực tiễn.","Kỹ năng lập trình và bảo mật dữ liệu cá nhân.","Sự kết hợp giữa tri thức và thái độ trong môi trường số."], a:1},
+      {q: "Công cụ nào sau đây là ví dụ của AI tạo sinh (Generative AI)?", opts:["Hệ chuyên gia","Google Translate","ChatGPT","Chatbot trả lời theo kịch bản"], a:2},
+      {q: "Trong Google Calendar, tính năng nào giúp bạn quản lý các công việc?", opts:["Google Keep","Google Tasks","Google Chat","Google Meet"], a:1},
+      {q: "Tính năng 'Soạn thảo bằng giọng nói' (Voice typing) có trong công cụ nào của Google?", opts:["Google Sheets","Google Slides","Google Docs","Google Forms"], a:2},
+      {q: "Công cụ nào trong Google Sheets giúp tổng hợp và phân tích dữ liệu từ một bảng tính lớn một cách nhanh chóng?", opts:["Bảng tạm (Clipboard)","Bộ lọc (Filter)","Bảng tổng hợp (Pivot Table)","Định dạng có điều kiện (Conditional Formatting)"], a:2},
+      {q: "Trong Gmail, tính năng nào giúp bạn tự động sắp xếp các email đến vào những thư mục cụ thể?", opts:["Nhãn (Labels)","Bộ lọc (Filters)","Tìm kiếm (Search)","Hộp thư đến ưu tiên (Priority Inbox)"], a:1},
+      {q: "Để tạo một cuộc họp video trực tuyến, nên sử dụng công cụ nào của Google?", opts:["Google Drive","Google Calendar","Google Meet","Google Docs"], a:2},
+      {q: "Google Chat tích hợp với công cụ nào?", opts:["Chỉ Zalo","Gmail, Drive, Meet, Calendar","Chỉ Messenger","Chỉ Zoom"], a:1},
+      {q: "Cấu trúc nội dung thư điện tử chuyên nghiệp gồm mấy phần?", opts:["2 phần: lời chào, nội dung chính","4 phần: lời chào, nội dung chính, lời cảm ơn, chữ ký","3 phần: nội dung chính, lời cảm ơn, chữ ký","5 phần: lời chào, nội dung chính, lời cảm ơn, chữ ký, hình ảnh."], a:1},
+      {q: "Bước đầu tiên để tạo cuộc họp trên Google Meet là gì?", opts:["Mời người tham gia","Mở Gmail, chọn Meet, chọn Cuộc họp mới","Chia sẻ màn hình","Kết thúc họp"], a:1},
+      {q: "Đặc điểm nào KHÔNG phải là dấu hiệu của nội dung do AI tạo ra?", opts:["Câu chữ trôi chảy nhưng thiếu chiều sâu.","Phong cách viết trung tính, thiếu cảm xúc.","Có nhiều lỗi chính tả và ngữ pháp.","Thiếu dẫn chứng xác thực hoặc nguồn không tồn tại."], a:2},
+      {q: "Yếu tố nào sau đây KHÔNG phải là tiêu chí của một Prompt hiệu quả?", opts:["Cụ thể, rõ ràng.","Viết càng dài càng tốt.","Có ngữ cảnh.","Có định dạng đầu ra mong muốn."], a:1},
+      {q: "Công cụ Vbee AI Voice được sử dụng cho mục đích chính là gì?", opts:["Chuyển văn bản thành giọng nói.","Phát hiện đạo văn.","Chỉnh sửa ngữ pháp.","Tạo hình ảnh từ văn bản."], a:0},
+      {q: "Trong Google Drive, bạn có thể truy cập tập tin và thư mục khi không có mạng Internet bằng cách nào?", opts:["Tải tệp về máy tính.","Bật chế độ truy cập ngoại tuyến.","Chia sẻ tệp với chính mình.","Gửi tệp qua email."], a:1},
+      {q: "Trong Google Drive, cú pháp tìm kiếm type:pdf sẽ cho ra kết quả gì?", opts:["Tìm tất cả các tệp có tên là \"pdf\".","Tìm tất cả các tệp có định dạng PDF.","Tìm tất cả các thư mục có tên là \"pdf\".","Tìm tất cả các tệp được chia sẻ bởi người dùng có tên \"pdf\"."], a:1},
+      {q: "Để chèn trích dẫn và quản lý danh mục tài liệu tham khảo trong Google Docs, bạn nên sử dụng tính năng nào?", opts:["Ghi chú cuối trang (Footnote)","Trích dẫn (Citations)","Nhận xét (Comment)","Đánh dấu trang (Bookmark)"], a:1},
+      {q: "Trong Google Sheets, để ẩn đi các dữ liệu không thỏa mãn một điều kiện nào đó, bạn dùng công cụ gì?", opts:["Sắp xếp (Sort)","Bộ lọc (Filter)","Bảng tổng hợp (Pivot Table)","Biểu đồ (Chart)"], a:1},
+      {q: "Cú pháp site:moet.gov.vn dùng để làm gì?", opts:["Giới hạn tìm kiếm trong website cụ thể","Tìm tài liệu PDF","Tìm chính xác cụm từ","Loại trừ từ khóa"], a:0},
+      {q: "Khi muốn tìm file PDF về chủ đề “An toàn thông tin”, cú pháp nào đúng?", opts:["\"An toàn thông tin\" site:pdf","\"An toàn thông tin\" filetype:pdf","pdf:\"An toàn thông tin\"","intitle:pdf An toàn thông tin"], a:1},
+      {q: "Kho tài nguyên học tập mở chuyên về Sách giáo khoa đại học miễn phí?", opts:["OpenStax","ResearchGate","SpringerLink","Academia.edu"], a:0},
+      {q: "Trong quản lý dữ liệu, đặt tên tập tin một cách khoa học sẻ giúp ích gì?", opts:["Tăng dung lượng lưu trữ","Dễ truy xuất và phân loại","Ngăn ngừa virus","Giảm tốc độ tìm kiếm"], a:1},
+      {q: "Ưu điểm nổi bật của Google Scholar so với Google Search là gì?", opts:["Kết quả tìm kiếm phong phú hơn","Chỉ tập trung tài liệu học thuật, có trích dẫn rõ ràng","Tốc độ tìm kiếm nhanh hơn","Không có quảng cáo"], a:1},
+      {q: "Biểu tượng dấu ngoặc kép (“ ”) trong Google Search dùng để:", opts:["Loại trừ từ khóa","Tìm chính xác cụm từ","Tìm file định dạng PDF","Tìm theo tiêu đề"], a:1},
+      {q: "Khi tổ chức dữ liệu học tập, cấu trúc cây Thư mục giúp ích gì?", opts:["Tiết kiệm dung lượng","Tránh virus","Quản lý rõ ràng, dễ tìm và chia sẻ","Tự động đồng bộ lên cloud"], a:2},
+      {q: "Vai trò của giao tiếp số trong học tập đại học là gì?", opts:["Không quan trọng","Trao đổi bài tập, thảo luận nhóm, tương tác với giảng viên","Chỉ dùng để giải trí","Chỉ dùng trong công việc"], a:1},
+      {q: "Công cụ Google Meet có ưu điểm gì?", opts:["Yêu cầu tài khoản Microsoft","Miễn phí, dễ sử dụng, tích hợp với Gmail và Calendar","Giới hạn thời gian cuộc họp","Hạn chế tính năng học thuật"], a:1},
+      {q: "Nguồn thông tin học thuật bao gồm những gì?", opts:["Trang tin tức điện tử, blog, diễn đàn","Cơ sở dữ liệu chuyên ngành như IEEE Xplore, ScienceDirect","Mạng xã hội như LinkedIn, Reddit","Wikipedia, trang web cá nhân"], a:1},
+      {q: "Giao tiếp số là gì?", opts:["Quá trình trao đổi thông tin qua phương tiện truyền thống","Quá trình trao đổi thông tin, cảm xúc và ý tưởng thông qua công nghệ số","Quá trình học tập trực tiếp tại lớp học","Quá trình làm việc nhóm mà không sử dụng công cụ số"], a:1},
+      {q: "Môi trường số bao gồm những gì?", opts:["Chỉ các thiết bị kỹ thuật số","Tổng thể không gian, nền tảng, công cụ và hệ sinh thái kết nối với Internet","Chỉ mạng xã hội","Chỉ thư điện tử"], a:1},
+      {q: "Giao tiếp đồng bộ (real-time) bao gồm những phương thức nào?", opts:["Gửi email","Họp trực tuyến, video call, tin nhắn tức thời","Để lại bình luận","Phản hồi sau khoảng trễ"], a:1},
+      {q: "Một trong những thách thức khi triển khai năng lực số tại Việt Nam là gì?", opts:["Thiếu chính sách hỗ trợ từ chính phủ.","Sự thiếu đồng đều về hạ tầng công nghệ giữa các vùng miền.","Sinh viên không quan tâm đến năng lực số.","Quá nhiều tài nguyên học tập số."], a:1},
+      {q: "Trong Google Forms, kết quả khảo sát có thể được tự động tổng hợp và xem dưới dạng nào?", opts:["Một tài liệu Google Docs","Một bài trình chiếu Google Slides","Một trang tính Google Sheets","Một sự kiện trên Google Calendar"], a:2},
+      {q: "Lạm dụng AI để làm bài thay có thể dẫn đến hậu quả gì?", opts:["Tăng cường kỹ năng tư duy.","Giảm kỹ năng tư duy, viết lách và học tập độc lập.","Được điểm cao hơn một cách bền vững.","Không ảnh hưởng gì đến năng lực cá nhân."], a:1},
+      {q: "Cú pháp tìm kiếm nâng cao trên Google để tìm trong một trang web cụ thể ?", opts:["\"từ khóa\" filetype:pdf","\"từ khóa\" site:địa chỉ trang web","define:từ chuyên môn","intitle:\"từ khóa\""], a:1},
+      {q: "Để tìm tài liệu dạng PDF chứa cụm “chuyển đổi số” trong website của Bộ Giáo dục, cú pháp nào đúng?", opts:["\"chuyển đổi số\" site:moet.gov.vn filetype:pdf","\"chuyển đổi số\" -moet.gov.vn pdf","define:chuyển đổi số site:moet.gov.vn","intitle:\"chuyển đổi số\" filetype:pdf"], a:0},
+      {q: "Lưu trữ đám mây có ưu điểm gì?", opts:["Chỉ phù hợp cho dữ liệu nhỏ","Truy cập mọi lúc mọi nơi, đồng bộ hóa dễ dàng","Dễ mất mát do sự cố phần cứng","Không cần quản lý bảo mật"], a:1},
+      {q: "Để lưu bài viết vào thư viện trên Google Scholar, bấm vào biểu tượng nào?", opts:["Biểu tượng kính lúp","Biểu tượng dấu nháy kép ( ’’)","Biểu tượng ngôi sao","Biểu tượng tải về"], a:2},
+      {q: "Nguyên tắc chia sẻ nội dung số bao gồm ?", opts:["Không tôn trọng bản quyền","Tôn trọng bản quyền, trích dẫn nguồn","Chia sẻ thông tin gây hại","Không bảo vệ quyền riêng tư"], a:1},
+      {q: "Để đăng nhập Google Drive, cách nào sau đây?", opts:["Chỉ qua Zalo","Truy cập drive.google.com hoặc từ Gmail","Chỉ qua Messenger","Chỉ qua Zoom"], a:1},
+      {q: "Để quản lý quyền truy cập trong Google Docs, làm gì?", opts:["Không chia sẻ","Chia sẻ và gán quyền (Xem, Bình luận, Chỉnh sửa)","Chỉ xem lịch sử","Xóa tài liệu"], a:1},
+      {q: "Để truy cập vào Google Docs, nên theo cách nào?", opts:["Chỉ qua Zalo","Từ Google Drive, Google Apps, hoặc docs.google.com","Chỉ qua Messenger","Chỉ qua Zoom"], a:1},
+      {q: "AI mạnh (Strong AI) được mô tả là gì?", opts:["Thực hiện tốt một nhiệm vụ cụ thể.","Có khả năng tư duy như con người, xử lý linh hoạt nhiều tình huống.","Vượt xa trí tuệ của con người.","Dựa vào các quy tắc logic có sẵn."], a:1},
+      {q: "Đâu là lợi ích của việc sử dụng AI trong học tập?", opts:["Giảm khả năng tư duy độc lập.","Tăng khả năng tra cứu và truy xuất thông tin.","Gây ra tình trạng đạo văn.","Tạo ra thông tin sai lệch."], a:1},
+      {q: "Công cụ nào sau đây KHÔNG phải là AI tạo sinh văn bản?", opts:["Gemini","ChatGPT","Copilot","Vbee AI Voice"], a:3},
+      {q: "Một prompt chưa tối ưu thường có đặc điểm gì?", opts:["Cụ thể và rõ ràng.","Cung cấp ngữ cảnh.","Quá chung chung, mơ hồ.","Nêu rõ định dạng đầu ra."], a:2},
+      {q: "ChatGPT KHÔNG phù hợp cho mục đích nào sau đây?", opts:["Gợi ý ý tưởng và lập kế hoạch.","Dịch các tài liệu kỹ thuật, học thuật cần độ chính xác cao.","Giải thích và tra cứu khái niệm.","Tóm tắt và diễn giải văn bản."], a:1},
+      {q: "Mục đích của việc viết prompt hiệu quả là gì?", opts:["Giúp AI hoạt động chậm lại.","Thử thách khả năng của AI.","Tối ưu hóa chất lượng và độ chính xác của kết quả đầu ra.","Khiến AI tạo ra các câu trả lời ngẫu nhiên."], a:2},
+      {q: "Bước đầu tiên để sử dụng ChatGPT là gì?", opts:["Nhập yêu cầu (prompt).","Tải ứng dụng về máy.","Truy cập trang web và đăng nhập/ đăng ký.","Chọn gói dịch vụ trả phí."], a:2},
+      {q: "AI có khả năng \"tự học\" nghĩa là gì?", opts:["AI chỉ thực hiện theo các quy tắc lập trình sẵn.","AI có thể rút kinh nghiệm từ dữ liệu mới để làm tốt hơn trong tương lai.","AI có ý thức và cảm xúc như con người.","AI không cần dữ liệu để hoạt động."], a:1},
+      {q: "AI truyền thống khác AI tạo sinh ở điểm nào?", opts:["AI truyền thống không tạo ra nội dung mới.","AI truyền thống thông minh hơn AI tạo sinh.","AI truyền thống xử lý được nhiều nhiệm vụ hơn.","AI truyền thống không cần dữ liệu để hoạt động."], a:0},
+      {q: "Vbee AI Voice hỗ trợ các giọng đọc thuộc vùng miền nào?", opts:["Chỉ miền Bắc.","Chỉ miền Nam.","Bắc, Trung, Nam.","Chỉ miền Bắc và miền Nam."], a:2},
+      {q: "Công cụ nào được ví dụ cho AI hỗ trợ cá nhân, tích hợp vào phần mềm?", opts:["DALL-E","Midjourney","Grammarly","ChatGPT"], a:2},
+      {q: "Cú pháp nào sau đây để loại trừ từ khóa trên Google là gì?", opts:["\"từ khóa\" + \"từ cần loại\"","\"từ khóa\" - \"từ cần loại\"","define: từ cần loại","site: từ cần loại"], a:1},
+      {q: "Dữ liệu (Data) được hiểu là gì?", opts:["Thông tin đã qua xử lý","Các giá trị rời rạc, thô sơ, chưa xử lý","Tri thức đã được tích lũy","Văn bản hoặc hình ảnh có ngữ nghĩa"], a:1},
+      {q: "Khi sử dụng thông tin số, cần tuân thủ:", opts:["Bản quyền và đạo đức học thuật","Chia sẻ tự do","Sao chép toàn bộ","Không trích nguồn"], a:0},
+      {q: "Cơ sở dữ liệu IEEE Xplore phù hợp với ngành:", opts:["Công nghệ thông tin, kỹ thuật điện","Lịch sử","Y học","Nghệ thuật"], a:0}
+    ];
+
+    // state
+    let idx = 0;
+    const total = questions.length;
+    const answers = new Array(total).fill(null);
+
+    const questionArea = document.getElementById('questionArea');
+    const currentIndex = document.getElementById('currentIndex');
+    const totalQ = document.getElementById('totalQ');
+    const progBar = document.getElementById('progBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultCard = document.getElementById('resultCard');
+    const scoreText = document.getElementById('scoreText');
+    const percentText = document.getElementById('percentText');
+    const feedbackArea = document.getElementById('feedbackArea');
+    const reviewBtn = document.getElementById('reviewBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    totalQ.textContent = total;
+
+    function renderQuestion(i){
+      const item = questions[i];
+      currentIndex.textContent = i+1;
+      progBar.style.width = Math.round(((i)/total)*100)+"%";
+      questionArea.innerHTML = '';
+      const qdiv = document.createElement('div'); qdiv.className='q';
+      const h = document.createElement('h3'); h.innerHTML = (i+1)+'. '+item.q; qdiv.appendChild(h);
+      const opts = document.createElement('div'); opts.className='opts';
+      item.opts.forEach((o,j)=>{
+        const id = 'q'+i+'_o'+j;
+        const label = document.createElement('label'); label.className='opt'; label.setAttribute('for', id);
+        const radio = document.createElement('input'); radio.type='radio'; radio.name='q'+i; radio.id=id; radio.value=j;
+        if(answers[i]===j) radio.checked=true;
+        radio.addEventListener('change', ()=>{ answers[i]=j; localSave(); });
+        const span = document.createElement('div'); span.textContent = String.fromCharCode(65+j) + '. ' + o;
+        label.appendChild(radio); label.appendChild(span);
+        opts.appendChild(label);
+      });
+      qdiv.appendChild(opts);
+      questionArea.appendChild(qdiv);
+    }
+
+    function localSave(){
+      try{ localStorage.setItem('quiz_answers_v1', JSON.stringify(answers)); }catch(e){}
+    }
+    function localLoad(){
+      try{ const s = localStorage.getItem('quiz_answers_v1'); if(s){ const a=JSON.parse(s); if(Array.isArray(a) && a.length===total){ for(let i=0;i<total;i++) answers[i]=a[i]; }} }catch(e){}
+    }
+
+    prevBtn.addEventListener('click', ()=>{ if(idx>0){ idx--; renderQuestion(idx); } });
+    nextBtn.addEventListener('click', ()=>{ if(idx<total-1){ idx++; renderQuestion(idx); } });
+    resetBtn.addEventListener('click', ()=>{ if(confirm('Làm lại toàn bộ bài?')){ for(let i=0;i<total;i++) answers[i]=null; localSave(); idx=0; renderQuestion(idx); resultCard.style.display='none'; document.getElementById('quizCard').style.display='block'; } });
+
+    submitBtn.addEventListener('click', ()=>{
+      if(!confirm('Bạn muốn nộp bài và chấm điểm?')) return;
+      // compute
+      let score=0; const wrong=[];
+      for(let i=0;i<total;i++){ if(answers[i]===questions[i].a) score++; else wrong.push(i); }
+      scoreText.textContent = score + ' / ' + total;
+      percentText.textContent = Math.round((score/total)*100) + '%';
+      feedbackArea.innerHTML = '<div class="small">Số câu đúng: '+score+' • Số câu sai: '+(total-score)+'</div>';
+      // short feedback list
+      const list = document.createElement('ol'); list.style.paddingLeft='16px';
+      for(let i=0;i<total;i++){
+        const li = document.createElement('li'); li.style.marginBottom='6px';
+        const your = (answers[i]===null)?'Chưa trả lời':(String.fromCharCode(65+(answers[i]||0)));
+        const correct = String.fromCharCode(65+questions[i].a);
+        li.textContent = (i+1)+'. Bạn: ' + your + ' — Đáp đúng: ' + correct + '. ' + questions[i].q;
+        list.appendChild(li);
+      }
+      feedbackArea.appendChild(list);
+      // toggle view
+      document.getElementById('quizCard').style.display='none';
+      resultCard.style.display='block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+
+    reviewBtn.addEventListener('click', ()=>{
+      // show all questions with correct answers highlighted
+      document.getElementById('quizCard').style.display='block';
+      resultCard.style.display='none';
+      idx=0; renderQuestion(idx);
+      // highlight correct on each render by coloring labels
+      const origRender = renderQuestion;
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      const data = {answers,score:scoreText.textContent,percent:percentText.textContent,ts:new Date().toISOString()};
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download = 'quiz_result.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // keyboard shortcuts
+    document.addEventListener('keydown',(e)=>{
+      if(e.key==='ArrowRight') nextBtn.click();
+      if(e.key==='ArrowLeft') prevBtn.click();
+    });
+
+    // init
+    // shuffle questions
+    (function(){
+      for(let i=questions.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [questions[i],questions[j]]=[questions[j],questions[i]];
+        [answers[i],answers[j]]=[answers[j],answers[i]];
+      }
+    })();
+    localLoad(); renderQuestion(0);
+  </script>
+</body>
+</html>
